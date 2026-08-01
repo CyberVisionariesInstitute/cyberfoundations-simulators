@@ -36,6 +36,11 @@
 
   .tip{background:var(--gold-soft); border-left:4px solid var(--gold); border-radius:0 10px 10px 0; padding:12px 16px; font-size:14px; margin:14px 0;}
   .tip b{color:var(--violet);}
+  .howto{background:#F3F0FA; border:2px solid var(--violet); border-radius:12px; padding:18px 22px; margin:18px 0;}
+  .howto h3{color:var(--violet); font-size:16px; margin-bottom:10px;}
+  .howto ol{margin-left:20px; font-size:14.5px;}
+  .howto li{margin-bottom:8px;}
+  .howto .kbd{font-family:ui-monospace,Consolas,monospace; background:#fff; border:1px solid var(--line); border-radius:5px; padding:1px 6px; font-size:12.5px; white-space:nowrap;}
   .shot{background:#EEF3FA; border:2px dashed var(--blue2); border-radius:10px; padding:12px 16px; font-size:14px; margin:16px 0; font-weight:600; color:var(--blue1);}
   .errbanner{display:none; background:var(--red-soft); border:2px solid var(--red); border-radius:10px; padding:12px 16px; font-size:14px; margin:14px 0;}
   .errbanner.show{display:block;}
@@ -199,6 +204,20 @@
       <p>You'll follow the same steps a cloud engineer follows when creating a real VM: choose a name and region, pick an operating system, select a size (and see what it costs per hour), create an administrator account, review, and create. Then you'll manage your running VM — starting, stopping, snapshotting, and deleting it — while a billing meter runs, just like in a real cloud. Starting in Week 6, the Lab Portal will hand you a <b>real</b> Azure VM built through this exact process — you'll recognize every step, because you did it here first.</p>
       <div class="tip"><b>Heads up — things can go wrong on purpose.</b> Real cloud platforms reject taken names, refuse weak passwords, and sometimes fail to provision. This simulator does too. Reading an error message calmly and fixing the problem is a core professional skill — errors here are part of the lab, not a mistake you made.</div>
       <div class="tip"><b>Deliverable 1 reminder:</b> You'll take <b>two screenshots</b> during this lab. The simulator will tell you exactly when. Save them to your portfolio repo under <span style="font-family:monospace">assets/screenshots/week-04/</span>.</div>
+
+      <div class="howto">
+        <h3>📋 How to use this simulator</h3>
+        <ol>
+          <li><b>Work the six steps across the top, in order.</b> Each screen's <b>Next</b> button stays grayed out until you've completed everything on that screen — if Next won't click, something on the screen still needs you.</li>
+          <li><b>Answer every Concept Check.</b> These are the purple quiz boxes. A wrong pick lets you try again; you can't move on until it's right. Everything they ask was covered in Lessons 3 and 4.</li>
+          <li><b>When something fails, that's the lab working.</b> A taken name, a rejected password, a provisioning error — read the message, find the ONE thing it points at, fix that, and retry. Don't start over.</li>
+          <li><b>Take the two screenshots exactly when the 📸 banners tell you.</b> Windows: <span class="kbd">Win + Shift + S</span> · Mac: <span class="kbd">Cmd + Shift + 4</span>. Save them as <span class="kbd">vm-config-summary.png</span> and <span class="kbd">vm-dashboard-running.png</span>.</li>
+          <li><b>Keep your Lab 03 worksheet open in another tab</b> and record your answers as you go — it asks for the same choices, meter readings, and errors you see here.</li>
+          <li><b>Refreshing this page resets the whole simulation.</b> Nothing is saved. That's fine if you want a fresh start — just capture your screenshots before you leave a screen.</li>
+        </ol>
+        <p style="font-size:13px; color:var(--muted); margin-top:6px;">Plan for 30–45 minutes, including the worksheet. Ready?</p>
+      </div>
+
       <div class="navrow">
         <span></span>
         <button class="btn primary" onclick="go(1)">Begin →</button>
