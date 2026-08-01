@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Foundry District Cloud Annex — VM Builder Simulator</title>
+<style>
+  :root{
+    --violet:#37206C; --blue1:#365F91; --blue2:#4F81BD;
+    --gold:#C9A227; --gold-soft:#FBF3D9;
+    --green:#1E8E5A; --green-soft:#E3F5EC;
+    --red:#B3372F; --red-soft:#FBE9E7;
+    --ink:#22252B; --muted:#5C6470;
+    --bg:#F4F5F8; --card:#FFFFFF; --line:#DDE1E8;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{font-family:-apple-system,"Segoe UI",Arial,sans-serif; background:var(--bg); color:var(--ink); line-height:1.55;}
+  header{background:var(--violet); color:#fff; padding:18px 28px; display:flex; align-items:center; gap:14px;}
+  header .logo{width:38px; height:38px; border-radius:9px; background:var(--gold); color:var(--violet); font-weight:800; display:flex; align-items:center; justify-content:center; font-size:20px;}
+  header h1{font-size:19px; font-weight:700;}
+  header p{font-size:12.5px; opacity:.85;}
+  .wrap{max-width:880px; margin:0 auto; padding:26px 20px 70px;}
+
+  .stepbar{display:flex; gap:5px; margin-bottom:22px;}
+  .stepbar .s{flex:1; text-align:center; font-size:11.5px; padding:8px 3px; border-radius:8px; background:#E9EBF1; color:var(--muted); font-weight:600;}
+  .stepbar .s.active{background:var(--blue1); color:#fff;}
+  .stepbar .s.done{background:var(--green-soft); color:var(--green);}
+
+  .card{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:26px 28px; box-shadow:0 1px 3px rgba(0,0,0,.05); margin-bottom:18px;}
+  .card h2{color:var(--violet); font-size:21px; margin-bottom:6px;}
+  .card h3{color:var(--blue1); font-size:16px; margin:18px 0 8px;}
+  .card p.lead{color:var(--muted); margin-bottom:14px;}
+  .screen{display:none;}
+  .screen.active{display:block; animation:fade .25s ease;}
+  @keyframes fade{from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:none;}}
+
+  .tip{background:var(--gold-soft); border-left:4px solid var(--gold); border-radius:0 10px 10px 0; padding:12px 16px; font-size:14px; margin:14px 0;}
+  .tip b{color:var(--violet);}
+  .shot{background:#EEF3FA; border:2px dashed var(--blue2); border-radius:10px; padding:12px 16px; font-size:14px; margin:16px 0; font-weight:600; color:var(--blue1);}
+  .errbanner{display:none; background:var(--red-soft); border:2px solid var(--red); border-radius:10px; padding:12px 16px; font-size:14px; margin:14px 0;}
+  .errbanner.show{display:block;}
+  .errbanner .code{font-family:ui-monospace,Consolas,monospace; font-weight:800; color:var(--red);}
+
+  label.fieldlabel{display:block; font-weight:700; font-size:14px; margin:14px 0 6px;}
+  input[type=text],input[type=password]{width:100%; padding:12px 14px; font-size:16px; border:2px solid var(--line); border-radius:10px; font-family:ui-monospace,Consolas,monospace;}
+  input:focus{outline:none; border-color:var(--blue2);}
+  .validation{font-size:13px; margin-top:8px;}
+  .validation .rule{display:flex; gap:7px; align-items:center; color:var(--muted); margin-top:3px;}
+  .validation .rule.ok{color:var(--green); font-weight:600;}
+
+  .oscards{display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:8px;}
+  .oscard{border:2px solid var(--line); border-radius:12px; padding:18px; cursor:pointer; transition:.15s; position:relative;}
+  .oscard:hover{border-color:var(--blue2);}
+  .oscard.sel{border-color:var(--violet); background:#F5F2FB; box-shadow:0 0 0 3px rgba(55,32,108,.12);}
+  .oscard .osname{font-weight:800; color:var(--violet); font-size:15.5px; margin-bottom:4px;}
+  .oscard .osdesc{font-size:13.5px; color:var(--muted);}
+  .oscard .osbadge{display:inline-block; font-size:11px; font-weight:700; padding:2px 8px; border-radius:20px; margin-bottom:8px;}
+  .badge-linux{background:#EFE6FA; color:var(--violet);}
+  .badge-win{background:#E3F5EC; color:var(--green);}
+  .badge-hot{background:var(--red-soft); color:var(--red);}
+  .badge-rec{background:var(--gold-soft); color:#8a6d10;}
+
+  .regioncards{display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; margin-top:8px;}
+  .regioncards .oscard{padding:14px;}
+  .regioncards .osname{font-size:14px;}
+  .regioncards .osdesc{font-size:12.5px;}
+
+  .tiercards{display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:8px;}
+  .tier{border:2px solid var(--line); border-radius:12px; padding:16px 18px; cursor:pointer; transition:.15s;}
+  .tier:hover{border-color:var(--blue2);}
+  .tier.sel{border-color:var(--violet); background:#F5F2FB; box-shadow:0 0 0 3px rgba(55,32,108,.12);}
+  .tier .tname{font-family:ui-monospace,Consolas,monospace; font-weight:800; color:var(--violet); font-size:16px;}
+  .tier .tprice{float:right; font-weight:800; color:var(--green); font-size:15px;}
+  .tier .tspecs{font-size:13.5px; color:var(--ink); margin-top:6px;}
+  .tier .tdesc{font-size:12.5px; color:var(--muted); margin-top:4px;}
+
+  .hostbox{margin-top:20px; background:#F8F9FB; border:1px solid var(--line); border-radius:12px; padding:16px 18px;}
+  .hostbox h4{font-size:13.5px; color:var(--blue1); margin-bottom:10px; text-transform:uppercase; letter-spacing:.4px;}
+  .rline{margin-bottom:12px;}
+  .rline .rlabel{display:flex; justify-content:space-between; font-size:13px; font-weight:600; margin-bottom:4px;}
+  .rline .rlabel span:last-child{color:var(--muted); font-weight:500;}
+  .bar{height:14px; background:#E5E8EE; border-radius:7px; overflow:hidden;}
+  .bar .fill{height:100%; background:linear-gradient(90deg,var(--blue1),var(--blue2)); border-radius:7px; transition:width .3s; min-width:0;}
+  .bar .fill.hot{background:linear-gradient(90deg,#B3372F,#D9663D);}
+
+  .meter{display:flex; gap:5px; margin-top:10px;}
+  .meter span{flex:1; height:9px; border-radius:5px; background:#E5E8EE;}
+  .meter span.on1{background:var(--red);}
+  .meter span.on2{background:#D9663D;}
+  .meter span.on3{background:var(--gold);}
+  .meter span.on4{background:var(--green);}
+  .meterlabel{font-size:13px; font-weight:700; margin-top:5px;}
+
+  .review{width:100%; border-collapse:collapse; margin-top:8px; font-size:14.5px;}
+  .review td{padding:10px 12px; border-bottom:1px solid var(--line);}
+  .review td:first-child{font-weight:700; color:var(--blue1); width:38%;}
+
+  .quiz{background:#F3F0FA; border:2px solid var(--violet); border-radius:12px; padding:18px 20px; margin:18px 0;}
+  .quiz .qtag{display:inline-block; background:var(--violet); color:#fff; font-size:11px; font-weight:800; letter-spacing:.6px; padding:3px 10px; border-radius:20px; margin-bottom:8px;}
+  .quiz .qtext{font-weight:700; margin-bottom:10px; font-size:15px;}
+  .quiz .opts{display:flex; flex-direction:column; gap:8px;}
+  .quiz .opts button{text-align:left; padding:10px 14px; border:2px solid var(--line); background:#fff; border-radius:9px; font-size:14px; cursor:pointer;}
+  .quiz .opts button:hover{border-color:var(--blue2);}
+  .quiz .opts button.right{border-color:var(--green); background:var(--green-soft); font-weight:700;}
+  .quiz .opts button.wrong{border-color:var(--red); background:var(--red-soft);}
+  .quiz .fb{margin-top:10px; font-size:13.5px; display:none;}
+  .quiz .fb.show{display:block;}
+  .quiz .fb.good{color:var(--green); font-weight:600;}
+  .quiz .fb.bad{color:var(--red);}
+
+  .navrow{display:flex; justify-content:space-between; margin-top:22px;}
+  .btn{padding:12px 26px; font-size:15px; font-weight:700; border-radius:10px; border:none; cursor:pointer;}
+  .btn.primary{background:var(--violet); color:#fff;}
+  .btn.primary:disabled{background:#B9B3CC; cursor:not-allowed;}
+  .btn.ghost{background:#fff; border:2px solid var(--line); color:var(--muted);}
+  .btn.green{background:var(--green); color:#fff;}
+  .btn.red{background:var(--red); color:#fff;}
+  .btn.blue{background:var(--blue1); color:#fff;}
+  .btn.small{padding:8px 16px; font-size:13.5px;}
+  .btn:disabled{opacity:.55; cursor:not-allowed;}
+
+  .prov{list-style:none; margin:16px 0;}
+  .prov li{display:flex; gap:10px; align-items:center; padding:9px 4px; font-size:15px; color:var(--muted);}
+  .prov li .dot{width:22px; height:22px; border-radius:50%; background:#E5E8EE; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:12px; color:#fff;}
+  .prov li.doing{color:var(--ink); font-weight:600;}
+  .prov li.doing .dot{background:var(--blue2); animation:pulse 1s infinite;}
+  .prov li.done{color:var(--green);}
+  .prov li.done .dot{background:var(--green);}
+  .prov li.fail{color:var(--red); font-weight:700;}
+  .prov li.fail .dot{background:var(--red);}
+  @keyframes pulse{50%{transform:scale(1.25);}}
+
+  .vmcard{border:2px solid var(--line); border-radius:14px; padding:20px 22px; margin-top:6px;}
+  .vmtop{display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;}
+  .vmname{font-family:ui-monospace,Consolas,monospace; font-size:19px; font-weight:800; color:var(--violet);}
+  .status{display:inline-flex; align-items:center; gap:7px; font-size:13px; font-weight:800; padding:5px 14px; border-radius:20px;}
+  .status .led{width:9px; height:9px; border-radius:50%;}
+  .status.run{background:var(--green-soft); color:var(--green);}
+  .status.run .led{background:var(--green); animation:pulse 1.4s infinite;}
+  .status.stop{background:#ECEDF1; color:var(--muted);}
+  .status.stop .led{background:#9AA1AC;}
+  .specs{display:flex; gap:16px; flex-wrap:wrap; margin:14px 0; font-size:13.5px; color:var(--muted);}
+  .specs b{color:var(--ink);}
+  .costbox{display:flex; gap:14px; flex-wrap:wrap; background:#F8F9FB; border:1px solid var(--line); border-radius:10px; padding:12px 16px; margin:10px 0 14px;}
+  .costbox .c{flex:1; min-width:130px;}
+  .costbox .clabel{font-size:11.5px; text-transform:uppercase; letter-spacing:.4px; color:var(--muted); font-weight:700;}
+  .costbox .cval{font-family:ui-monospace,Consolas,monospace; font-size:18px; font-weight:800; color:var(--violet);}
+  .costnote{font-size:12px; color:var(--muted); margin-top:-6px; margin-bottom:12px;}
+  .lifecycle{display:flex; gap:10px; flex-wrap:wrap; margin-top:8px;}
+  .log{margin-top:18px; background:#1D1633; border-radius:10px; padding:14px 16px; font-family:ui-monospace,Consolas,monospace; font-size:12.5px; color:#D9D2F0; max-height:180px; overflow-y:auto;}
+  .log .t{color:#8F84B8;}
+  .snapshots{margin-top:14px; font-size:14px;}
+  .snapshots .snap{display:flex; justify-content:space-between; background:#F8F9FB; border:1px solid var(--line); border-radius:8px; padding:8px 12px; margin-top:6px; font-family:ui-monospace,Consolas,monospace; font-size:13px;}
+
+  .done-banner{background:var(--green-soft); border:2px solid var(--green); border-radius:12px; padding:18px 22px; margin-top:20px; display:none;}
+  .done-banner.show{display:block;}
+  .done-banner h3{color:var(--green); margin:0 0 8px;}
+  .done-banner ul{margin:8px 0 0 20px; font-size:14px;}
+
+  .modal-bg{position:fixed; inset:0; background:rgba(20,15,40,.55); display:none; align-items:center; justify-content:center; z-index:50;}
+  .modal-bg.show{display:flex;}
+  .modal{background:#fff; border-radius:14px; padding:26px 28px; max-width:440px; width:92%;}
+  .modal h3{color:var(--red); margin-bottom:10px;}
+  .modal p{font-size:14.5px; margin-bottom:18px;}
+  .modal .row{display:flex; gap:10px; justify-content:flex-end;}
+
+  footer{max-width:880px; margin:0 auto; padding:0 20px 40px; font-size:12px; color:var(--muted); text-align:center;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">⚙</div>
+  <div>
+    <h1>Foundry District Cloud Annex</h1>
+    <p>CyberFoundations City · Week 4 · VM Builder Simulator (training environment — no real servers involved)</p>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div class="stepbar" id="stepbar">
+    <div class="s" data-step="0">Briefing</div>
+    <div class="s" data-step="1">1 · Basics</div>
+    <div class="s" data-step="2">2 · OS</div>
+    <div class="s" data-step="3">3 · Size</div>
+    <div class="s" data-step="4">4 · Admin</div>
+    <div class="s" data-step="5">5 · Review</div>
+    <div class="s" data-step="6">6 · Manage</div>
+  </div>
+
+  <!-- ============ SCREEN 0: BRIEFING ============ -->
+  <div class="screen active" id="screen-0">
+    <div class="card">
+      <h2>Mission Briefing: Provision Your First Virtual Machine</h2>
+      <p class="lead">The Foundry District is expanding into the cloud, and you've been asked to set up its first virtual machine (VM).</p>
+      <p>A <b>virtual machine</b> is a complete computer — operating system, storage, memory — that runs as software on top of a physical computer. The physical computer is called the <b>host</b>, and the machine you're about to build is a <b>guest</b>. A special software layer called a <b>hypervisor</b> divides the host's real hardware among its guests.</p>
+      <h3>What you'll do in this lab</h3>
+      <p>You'll follow the same steps a cloud engineer follows when creating a real VM: choose a name and region, pick an operating system, select a size (and see what it costs per hour), create an administrator account, review, and create. Then you'll manage your running VM — starting, stopping, snapshotting, and deleting it — while a billing meter runs, just like in a real cloud. Starting in Week 6, the Lab Portal will hand you a <b>real</b> Azure VM built through this exact process — you'll recognize every step, because you did it here first.</p>
+      <div class="tip"><b>Heads up — things can go wrong on purpose.</b> Real cloud platforms reject taken names, refuse weak passwords, and sometimes fail to provision. This simulator does too. Reading an error message calmly and fixing the problem is a core professional skill — errors here are part of the lab, not a mistake you made.</div>
+      <div class="tip"><b>Deliverable 1 reminder:</b> You'll take <b>two screenshots</b> during this lab. The simulator will tell you exactly when. Save them to your portfolio repo under <span style="font-family:monospace">assets/screenshots/week-04/</span>.</div>
+      <div class="navrow">
+        <span></span>
+        <button class="btn primary" onclick="go(1)">Begin →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ SCREEN 1: BASICS (NAME + REGION) ============ -->
+  <div class="screen" id="screen-1">
+    <div class="card">
+      <h2>Step 1 — Basics: Name &amp; Region</h2>
+      <p class="lead">Every VM needs a unique name and a home datacenter. Cloud platforms enforce naming rules — this one uses the same rules as Azure.</p>
+
+      <label class="fieldlabel" for="vmname">Virtual machine name</label>
+      <input type="text" id="vmname" placeholder="e.g. foundry-vm-01" autocomplete="off" oninput="checkName()">
+      <div class="validation" id="namerules">
+        <div class="rule" id="r-len">○ Between 3 and 24 characters</div>
+        <div class="rule" id="r-chars">○ Only lowercase letters, numbers, and hyphens</div>
+        <div class="rule" id="r-start">○ Starts with a letter</div>
+      </div>
+      <div class="errbanner" id="name-err"><span class="code">NameNotAvailable:</span> a VM named <b><span id="name-err-name"></span></b> already exists in this account. Names must be unique — pick another. (Yes, even the example name gets taken in real life.)</div>
+      <div class="tip"><b>Why naming matters:</b> In a real company, one cloud account can hold hundreds of VMs. Names like <span style="font-family:monospace">web-server-prod-01</span> tell you at a glance what a machine does. Vague names like <span style="font-family:monospace">test123</span> cause real security incidents — nobody knows what's safe to shut down.</div>
+
+      <label class="fieldlabel">Region (which datacenter will host your VM?)</label>
+      <div class="regioncards">
+        <div class="oscard" id="reg-central" onclick="pickRegion('central')">
+          <span class="osbadge badge-rec">RECOMMENDED</span>
+          <div class="osname">Foundry Central</div>
+          <div class="osdesc">Closest to you. Lowest latency — your commands reach the VM fastest.</div>
+        </div>
+        <div class="oscard" id="reg-east" onclick="pickRegion('east')">
+          <span class="osbadge badge-hot">HIGH DEMAND</span>
+          <div class="osname">Foundry East</div>
+          <div class="osdesc">The most popular region. Often runs near capacity — provisioning can fail when it's full.</div>
+        </div>
+        <div class="oscard" id="reg-west" onclick="pickRegion('west')">
+          <span class="osbadge badge-linux">STANDARD</span>
+          <div class="osname">Foundry West</div>
+          <div class="osdesc">Farther away — slightly higher latency. Often used for backups and redundancy.</div>
+        </div>
+      </div>
+
+      <div class="navrow">
+        <button class="btn ghost" onclick="go(0)">← Back</button>
+        <button class="btn primary" id="next1" disabled onclick="tryBasics()">Next: Operating System →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ SCREEN 2: OS ============ -->
+  <div class="screen" id="screen-2">
+    <div class="card">
+      <h2>Step 2 — Choose a Guest Operating System</h2>
+      <p class="lead">This is the OS that will run <i>inside</i> your VM. You've used both of these families in the CLI Simulator — bash lives on Linux, PowerShell lives on Windows.</p>
+      <div class="oscards">
+        <div class="oscard" id="os-linux" onclick="pickOS('linux')">
+          <span class="osbadge badge-linux">LINUX</span>
+          <div class="osname">Ubuntu Server 22.04 LTS</div>
+          <div class="osdesc">A popular, free Linux distribution. No graphical desktop — you manage it entirely through the command line (bash). Most cloud servers in the world run Linux. <b>No license fee.</b></div>
+        </div>
+        <div class="oscard" id="os-win" onclick="pickOS('win')">
+          <span class="osbadge badge-win">WINDOWS</span>
+          <div class="osname">Windows Server 2022</div>
+          <div class="osdesc">Microsoft's server operating system. Managed with PowerShell and graphical tools. Common in businesses that run Active Directory — which you'll meet in Week 11. <b>Adds a license fee of $0.046/hr.</b></div>
+        </div>
+      </div>
+
+      <div class="quiz" id="quiz1">
+        <span class="qtag">CONCEPT CHECK 1</span>
+        <div class="qtext">The OS you just picked will run inside your VM as the "guest." What do we call the operating system of the physical computer underneath?</div>
+        <div class="opts">
+          <button onclick="answer(this,'quiz1',false)">The guest OS</button>
+          <button onclick="answer(this,'quiz1',true)">The host OS</button>
+          <button onclick="answer(this,'quiz1',false)">The virtual OS</button>
+        </div>
+        <div class="fb" id="quiz1-fb"></div>
+      </div>
+
+      <div class="navrow">
+        <button class="btn ghost" onclick="go(1)">← Back</button>
+        <button class="btn primary" id="next2" disabled onclick="go(3)">Next: Size →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ SCREEN 3: SIZE (TIERS) ============ -->
+  <div class="screen" id="screen-3">
+    <div class="card">
+      <h2>Step 3 — Choose a VM Size</h2>
+      <p class="lead">Cloud platforms sell VMs in named sizes — fixed bundles of CPU, memory, and disk, each with an hourly price. The meter runs for every hour the VM exists in a running state. Choose a size, and watch the host's resources get carved up below.</p>
+      <div class="tiercards" id="tiers"></div>
+      <div class="tip" id="winfee" style="display:none;"><b>License fee applies:</b> you picked Windows Server, which adds <b>$0.046/hr</b> on top of the size price. Linux VMs skip this fee — one reason most cloud servers run Linux.</div>
+
+      <div class="hostbox">
+        <h4>Host machine resources (the physical computer)</h4>
+        <div class="rline">
+          <div class="rlabel"><span>CPU</span><span id="cpu-txt">0 of 8 cores allocated to your VM</span></div>
+          <div class="bar"><div class="fill" id="cpu-bar" style="width:0%"></div></div>
+        </div>
+        <div class="rline">
+          <div class="rlabel"><span>RAM</span><span id="ram-txt">0 of 32 GB allocated to your VM</span></div>
+          <div class="bar"><div class="fill" id="ram-bar" style="width:0%"></div></div>
+        </div>
+        <div class="rline">
+          <div class="rlabel"><span>Disk</span><span id="disk-txt">0 of 512 GB allocated to your VM</span></div>
+          <div class="bar"><div class="fill" id="disk-bar" style="width:0%"></div></div>
+        </div>
+      </div>
+      <div class="tip"><b>Notice:</b> the host never gives everything away. It keeps resources for itself and for other VMs it might run. In real datacenters, one powerful host runs dozens of guest VMs at once — that sharing is what makes cloud computing affordable.</div>
+
+      <div class="quiz" id="quiz2">
+        <span class="qtag">CONCEPT CHECK 2</span>
+        <div class="qtext">What is the name of the software layer that divides the host's physical CPU, RAM, and disk among virtual machines?</div>
+        <div class="opts">
+          <button onclick="answer(this,'quiz2',false)">The operating system</button>
+          <button onclick="answer(this,'quiz2',false)">The firewall</button>
+          <button onclick="answer(this,'quiz2',true)">The hypervisor</button>
+        </div>
+        <div class="fb" id="quiz2-fb"></div>
+      </div>
+
+      <div class="navrow">
+        <button class="btn ghost" onclick="go(2)">← Back</button>
+        <button class="btn primary" id="next3" disabled onclick="go(4)">Next: Admin Account →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ SCREEN 4: ADMIN ACCOUNT ============ -->
+  <div class="screen" id="screen-4">
+    <div class="card">
+      <h2>Step 4 — Create the Administrator Account</h2>
+      <p class="lead">Every new VM needs an administrator account — the account you'll use to sign in and manage it. This is the most security-critical choice in the whole process: this account has full control of the machine.</p>
+
+      <label class="fieldlabel" for="adminuser">Administrator username</label>
+      <input type="text" id="adminuser" placeholder="e.g. foundry-admin" autocomplete="off" oninput="checkAdmin()">
+      <div class="validation">
+        <div class="rule" id="u-len">○ Between 3 and 20 characters (letters, numbers, hyphens)</div>
+        <div class="rule" id="u-blocked">○ Not a name attackers guess first (admin, administrator, root, user, guest, test)</div>
+      </div>
+      <div class="tip"><b>Why the blocklist?</b> Automated attacks hammer every server on the internet trying usernames like <span style="font-family:monospace">admin</span> and <span style="font-family:monospace">root</span> thousands of times a day. Real cloud platforms refuse them for exactly this reason.</div>
+
+      <label class="fieldlabel" for="adminpass">Administrator password</label>
+      <input type="password" id="adminpass" autocomplete="off" oninput="checkAdmin()">
+      <div class="meter" id="pmeter"><span></span><span></span><span></span><span></span></div>
+      <div class="meterlabel" id="pmeterlabel">Strength: —</div>
+      <div class="validation">
+        <div class="rule" id="p-len">○ At least 12 characters</div>
+        <div class="rule" id="p-case">○ Uppercase and lowercase letters</div>
+        <div class="rule" id="p-num">○ At least one number</div>
+        <div class="rule" id="p-sym">○ At least one symbol (!@#$%…)</div>
+      </div>
+      <div class="tip"><b>Professional habit:</b> never reuse a password you use anywhere else, and store server credentials in a password manager — not a sticky note, not a text file on your desktop. In Week 8 you'll learn key-based authentication, which is stronger than any password.</div>
+
+      <div class="navrow">
+        <button class="btn ghost" onclick="go(3)">← Back</button>
+        <button class="btn primary" id="next4" disabled onclick="buildReview();go(5)">Next: Review →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ SCREEN 5: REVIEW & CREATE ============ -->
+  <div class="screen" id="screen-5">
+    <div class="card">
+      <h2>Step 5 — Review &amp; Create</h2>
+      <p class="lead">Check your configuration. This is your last chance before the meter starts running — a VM starts costing money the moment it exists.</p>
+      <table class="review" id="review-table"></table>
+      <div class="shot" id="shot1">📸 SCREENSHOT 1 — Capture this configuration summary now. Save it as <span style="font-family:monospace">vm-config-summary.png</span> in <span style="font-family:monospace">assets/screenshots/week-04/</span>.</div>
+      <div id="prov-area" style="display:none;">
+        <h3>Provisioning your virtual machine…</h3>
+        <ul class="prov" id="prov-list">
+          <li><span class="dot">1</span> Reserving CPU and memory on the host</li>
+          <li><span class="dot">2</span> Creating the virtual disk</li>
+          <li><span class="dot">3</span> Installing the guest operating system</li>
+          <li><span class="dot">4</span> Configuring the administrator account</li>
+          <li><span class="dot">5</span> Connecting the virtual network adapter</li>
+          <li><span class="dot">6</span> Booting your VM</li>
+        </ul>
+      </div>
+      <div class="errbanner" id="prov-err"></div>
+      <div class="navrow">
+        <button class="btn ghost" id="back5" onclick="go(4)">← Back</button>
+        <span style="display:flex; gap:10px;">
+          <button class="btn blue" id="fixsize" style="display:none;" onclick="fixSize()">↩ Change Size</button>
+          <button class="btn blue" id="retrybtn" style="display:none;" onclick="provision()">↻ Retry</button>
+          <button class="btn green" id="createbtn" onclick="provision()">⚡ Create Virtual Machine</button>
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ SCREEN 6: DASHBOARD ============ -->
+  <div class="screen" id="screen-6">
+    <div class="card">
+      <h2>Step 6 — Manage Your Virtual Machine</h2>
+      <p class="lead">Your VM exists — and it's now costing money. This dashboard is where an administrator manages a VM through its lifecycle. Complete all four lifecycle tasks below, and keep an eye on the bill.</p>
+
+      <div class="vmcard">
+        <div class="vmtop">
+          <span class="vmname" id="dash-name">—</span>
+          <span class="status run" id="dash-status"><span class="led"></span><span id="dash-status-txt">Running</span></span>
+        </div>
+        <div class="specs" id="dash-specs"></div>
+        <div class="costbox">
+          <div class="c"><div class="clabel">Simulated hours</div><div class="cval" id="cost-hours">0</div></div>
+          <div class="c"><div class="clabel">Current rate</div><div class="cval" id="cost-rate">—</div></div>
+          <div class="c"><div class="clabel">Cost so far</div><div class="cval" id="cost-total">$0.00</div></div>
+        </div>
+        <div class="costnote">⏱ Time is accelerated: 1 real second = 1 simulated hour. A stopped (deallocated) VM stops paying for CPU and RAM, but its disk still costs $0.002/hr — storage exists whether the machine is on or off.</div>
+        <div class="lifecycle">
+          <button class="btn blue small" id="btn-stop" onclick="vmStop()">■ Stop</button>
+          <button class="btn green small" id="btn-start" onclick="vmStart()" disabled>▶ Start</button>
+          <button class="btn blue small" id="btn-snap" onclick="vmSnap()">⧉ Take Snapshot</button>
+          <button class="btn red small" id="btn-del" onclick="askDelete()">🗑 Delete</button>
+        </div>
+        <div class="snapshots" id="snaplist"></div>
+        <div class="log" id="log"></div>
+      </div>
+
+      <div class="shot">📸 SCREENSHOT 2 — With your VM in the <b>Running</b> state and at least one snapshot taken, capture this dashboard. Save it as <span style="font-family:monospace">vm-dashboard-running.png</span> in <span style="font-family:monospace">assets/screenshots/week-04/</span>.</div>
+
+      <h3>Lifecycle checklist</h3>
+      <ul style="margin-left:20px; font-size:14.5px;" id="tasklist">
+        <li id="task-stop">⬜ Stop your VM — then watch what happens to the billing rate</li>
+        <li id="task-start">⬜ Start it again</li>
+        <li id="task-snap">⬜ Take a snapshot (a saved copy of the VM's exact state you can roll back to)</li>
+        <li id="task-del">⬜ Delete the VM — the only way to stop paying entirely</li>
+      </ul>
+
+      <div class="tip"><b>Why snapshots matter to YOU:</b> starting in Week 6, every real lab VM you use in this course is created from a <b>golden snapshot</b> your instructor built — the exact technique you just practiced. And you'll connect to it right from your browser through a secure gateway called <b>Azure Bastion</b> — no installs, no Azure account needed. You'll learn how that connection works in Weeks 5 and 6.</div>
+
+      <div class="quiz" id="quiz3" style="margin-top:20px;">
+        <span class="qtag">CONCEPT CHECK 3</span>
+        <div class="qtext">In Week 6 you'll work on a real VM in Microsoft Azure. Azure's hypervisor runs directly on the datacenter's physical servers, with no everyday operating system underneath it. Which type of hypervisor is that?</div>
+        <div class="opts">
+          <button onclick="answer(this,'quiz3',true)">Type 1 — "bare metal," runs directly on hardware</button>
+          <button onclick="answer(this,'quiz3',false)">Type 2 — "hosted," runs as an app on a normal OS</button>
+        </div>
+        <div class="fb" id="quiz3-fb"></div>
+      </div>
+
+      <div class="quiz" id="quiz4">
+        <span class="qtag">CONCEPT CHECK 4</span>
+        <div class="qtext">You stopped (deallocated) your VM, but the bill kept creeping up — slowly. What were you still paying for?</div>
+        <div class="opts">
+          <button onclick="answer(this,'quiz4',false)">CPU time — the processor keeps working when stopped</button>
+          <button onclick="answer(this,'quiz4',true)">Disk storage — the virtual disk exists even when the VM is off</button>
+          <button onclick="answer(this,'quiz4',false)">Nothing — stopped VMs are always free</button>
+        </div>
+        <div class="fb" id="quiz4-fb"></div>
+      </div>
+
+      <div class="done-banner" id="donebanner">
+        <h3>✔ Mission Complete — VM Lifecycle Mastered</h3>
+        <p style="font-size:14.5px;">You provisioned, managed, and decommissioned a virtual machine — and saw exactly what it cost: <b><span id="final-cost">$0.00</span></b>. Before you leave, confirm you have:</p>
+        <ul>
+          <li>Screenshot 1 — VM configuration summary (<span style="font-family:monospace">vm-config-summary.png</span>)</li>
+          <li>Screenshot 2 — dashboard with VM running + snapshot (<span style="font-family:monospace">vm-dashboard-running.png</span>)</li>
+          <li>All four Concept Checks answered</li>
+        </ul>
+        <p style="font-size:14.5px; margin-top:10px;">Add both screenshots to <span style="font-family:monospace">assets/screenshots/week-04/</span> and finish your lab worksheet in the Lab Portal.</p>
+        <div style="margin-top:14px;"><button class="btn primary" onclick="resetAll()">↻ Provision Another VM</button></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- delete modal -->
+<div class="modal-bg" id="modalbg">
+  <div class="modal">
+    <h3>Delete this virtual machine?</h3>
+    <p>Deleting a VM <b>permanently destroys its virtual disk</b> and everything on it. In a real cloud platform there is no undo — this is why administrators take snapshots first. Your snapshot means you <i>could</i> rebuild. Deleting is also the only way to stop all billing. Proceed?</p>
+    <div class="row">
+      <button class="btn ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn red" onclick="vmDelete()">Yes, delete it</button>
+    </div>
+  </div>
+</div>
+
+<footer>CyberFoundations · Module 1 · Week 4 — VM Builder Simulator (prototype v2). This is a training simulation; no real infrastructure is created and no real money is spent.</footer>
+
+<script>
+  var TIERS = [
+    { id:"b1s",  name:"B1s",    cpu:1, ram:1,  disk:32,  rate:0.012, desc:"Burstable — light testing and tiny workloads." },
+    { id:"b2s",  name:"B2s",    cpu:2, ram:4,  disk:64,  rate:0.046, desc:"Small workloads — the size this course's labs assume." },
+    { id:"d2s",  name:"D2s_v3", cpu:2, ram:8,  disk:128, rate:0.11,  desc:"General purpose — typical production web server." },
+    { id:"d4s",  name:"D4s_v3", cpu:4, ram:16, disk:256, rate:0.22,  desc:"Heavier production workloads — databases, busy apps." }
+  ];
+  var HOST = { cpu: 8, ram: 32, disk: 512 };
+  var TAKEN_NAMES = ["foundry-vm-01","test-vm","web-server-01"];
+  var BLOCKED_USERS = ["admin","administrator","root","user","guest","test"];
+  var WIN_FEE = 0.046, DISK_RATE = 0.002;
+
+  var state = {
+    step: 0, name: "", nameOk: false, region: null, os: null, tier: null,
+    userOk: false, passOk: false,
+    quizzes: { quiz1:false, quiz2:false, quiz3:false, quiz4:false },
+    running: false, deleted: false, snaps: 0,
+    tasks: { stop:false, start:false, snap:false, del:false },
+    eastFailed: false,
+    hours: 0, cost: 0, ticker: null
+  };
+
+  function go(n){
+    state.step = n;
+    document.querySelectorAll(".screen").forEach(function(s){ s.classList.remove("active"); });
+    document.getElementById("screen-"+n).classList.add("active");
+    document.querySelectorAll("#stepbar .s").forEach(function(s){
+      var d = parseInt(s.dataset.step);
+      s.classList.toggle("active", d===n);
+      s.classList.toggle("done", d<n);
+    });
+    window.scrollTo({top:0, behavior:"smooth"});
+  }
+
+  /* ---- step 1: basics ---- */
+  function checkName(){
+    var v = document.getElementById("vmname").value;
+    var okLen = v.length>=3 && v.length<=24;
+    var okChars = /^[a-z0-9-]*$/.test(v) && v.length>0;
+    var okStart = /^[a-z]/.test(v);
+    mark("r-len", okLen); mark("r-chars", okChars); mark("r-start", okStart);
+    state.nameOk = okLen && okChars && okStart;
+    if(state.nameOk) state.name = v;
+    document.getElementById("name-err").classList.remove("show");
+    gate1();
+  }
+  function mark(id, ok){
+    var el = document.getElementById(id);
+    el.classList.toggle("ok", ok);
+    el.textContent = (ok ? "✔ " : "○ ") + el.textContent.slice(2);
+  }
+  function pickRegion(r){
+    state.region = r;
+    ["central","east","west"].forEach(function(x){
+      document.getElementById("reg-"+x).classList.toggle("sel", x===r);
+    });
+    gate1();
+  }
+  function gate1(){
+    document.getElementById("next1").disabled = !(state.nameOk && state.region);
+  }
+  function tryBasics(){
+    if(TAKEN_NAMES.indexOf(state.name) !== -1){
+      document.getElementById("name-err-name").textContent = state.name;
+      document.getElementById("name-err").classList.add("show");
+      window.scrollTo({top:0, behavior:"smooth"});
+      return;
+    }
+    go(2);
+  }
+
+  /* ---- step 2: OS ---- */
+  function pickOS(which){
+    state.os = which;
+    document.getElementById("os-linux").classList.toggle("sel", which==="linux");
+    document.getElementById("os-win").classList.toggle("sel", which==="win");
+    document.getElementById("winfee").style.display = which==="win" ? "block" : "none";
+    gate2();
+  }
+  function gate2(){
+    document.getElementById("next2").disabled = !(state.os && state.quizzes.quiz1);
+  }
+
+  /* ---- quizzes ---- */
+  function answer(btn, quizId, correct){
+    var quiz = document.getElementById(quizId);
+    var fb = document.getElementById(quizId+"-fb");
+    if(correct){
+      quiz.querySelectorAll(".opts button").forEach(function(b){ b.disabled = true; b.classList.remove("wrong"); });
+      btn.classList.add("right");
+      fb.className = "fb show good";
+      fb.textContent = "✔ Correct!";
+      state.quizzes[quizId] = true;
+      if(quizId==="quiz1") gate2();
+      if(quizId==="quiz2") gate3();
+      if(quizId==="quiz3"||quizId==="quiz4") checkDone();
+    } else {
+      btn.classList.add("wrong");
+      fb.className = "fb show bad";
+      fb.textContent = "Not quite — think back to the briefing and try again.";
+    }
+  }
+
+  /* ---- step 3: tiers ---- */
+  function buildTiers(){
+    var html = "";
+    TIERS.forEach(function(t){
+      html += "<div class='tier' id='tier-"+t.id+"' onclick=\"pickTier('"+t.id+"')\">"+
+        "<span class='tprice'>$"+t.rate.toFixed(3)+"/hr</span>"+
+        "<span class='tname'>"+t.name+"</span>"+
+        "<div class='tspecs'>"+t.cpu+" vCPU"+(t.cpu>1?"s":"")+" · "+t.ram+" GB RAM · "+t.disk+" GB disk</div>"+
+        "<div class='tdesc'>"+t.desc+"</div></div>";
+    });
+    document.getElementById("tiers").innerHTML = html;
+  }
+  function tierById(id){ return TIERS.filter(function(t){ return t.id===id; })[0]; }
+  function pickTier(id){
+    state.tier = id;
+    TIERS.forEach(function(t){ document.getElementById("tier-"+t.id).classList.toggle("sel", t.id===id); });
+    var t = tierById(id);
+    setBar("cpu", t.cpu, HOST.cpu, " of "+HOST.cpu+" cores allocated to your VM");
+    setBar("ram", t.ram, HOST.ram, " of "+HOST.ram+" GB allocated to your VM");
+    setBar("disk", t.disk, HOST.disk, " of "+HOST.disk+" GB allocated to your VM");
+    gate3();
+  }
+  function setBar(kind, val, max, suffix){
+    var pct = Math.round(val/max*100);
+    var bar = document.getElementById(kind+"-bar");
+    bar.style.width = pct+"%";
+    bar.classList.toggle("hot", pct>=50);
+    document.getElementById(kind+"-txt").textContent = val + suffix;
+  }
+  function gate3(){
+    document.getElementById("next3").disabled = !(state.tier && state.quizzes.quiz2);
+  }
+
+  /* ---- step 4: admin ---- */
+  function checkAdmin(){
+    var u = document.getElementById("adminuser").value;
+    var p = document.getElementById("adminpass").value;
+    var uLen = /^[a-zA-Z0-9-]{3,20}$/.test(u);
+    var uBlocked = BLOCKED_USERS.indexOf(u.toLowerCase()) === -1 && u.length>0;
+    mark("u-len", uLen); mark("u-blocked", uLen && uBlocked);
+    state.userOk = uLen && uBlocked;
+
+    var pLen = p.length >= 12;
+    var pCase = /[a-z]/.test(p) && /[A-Z]/.test(p);
+    var pNum = /[0-9]/.test(p);
+    var pSym = /[^a-zA-Z0-9]/.test(p);
+    mark("p-len", pLen); mark("p-case", pCase); mark("p-num", pNum); mark("p-sym", pSym);
+    var score = [pLen,pCase,pNum,pSym].filter(Boolean).length;
+    state.passOk = score === 4;
+
+    var segs = document.querySelectorAll("#pmeter span");
+    var labels = ["Strength: —","Strength: Weak","Strength: Fair","Strength: Good","Strength: Strong ✔"];
+    segs.forEach(function(s,i){
+      s.className = "";
+      if(i < score) s.classList.add("on"+score);
+    });
+    var lab = document.getElementById("pmeterlabel");
+    lab.textContent = labels[score];
+    lab.style.color = score===4 ? "var(--green)" : (score>=2 ? "var(--gold)" : "var(--red)");
+
+    document.getElementById("next4").disabled = !(state.userOk && state.passOk);
+  }
+
+  /* ---- step 5: review + provision ---- */
+  function osLabel(){ return state.os==="linux" ? "Ubuntu Server 22.04 LTS (Linux)" : "Windows Server 2022"; }
+  function regionLabel(){ return {central:"Foundry Central", east:"Foundry East (high demand)", west:"Foundry West"}[state.region]; }
+  function hourlyRate(){ return tierById(state.tier).rate + (state.os==="win" ? WIN_FEE : 0); }
+  function buildReview(){
+    var t = tierById(state.tier);
+    var rate = hourlyRate();
+    document.getElementById("review-table").innerHTML =
+      "<tr><td>VM name</td><td style='font-family:monospace'>"+state.name+"</td></tr>"+
+      "<tr><td>Region</td><td>"+regionLabel()+"</td></tr>"+
+      "<tr><td>Guest operating system</td><td>"+osLabel()+"</td></tr>"+
+      "<tr><td>Size</td><td style='font-family:monospace'>"+t.name+"</td></tr>"+
+      "<tr><td>Resources</td><td>"+t.cpu+" vCPU"+(t.cpu>1?"s":"")+" · "+t.ram+" GB RAM · "+t.disk+" GB disk</td></tr>"+
+      "<tr><td>Administrator</td><td style='font-family:monospace'>"+document.getElementById("adminuser").value+"</td></tr>"+
+      "<tr><td>Compute price</td><td>$"+t.rate.toFixed(3)+"/hr"+(state.os==="win" ? " + $"+WIN_FEE.toFixed(3)+"/hr Windows license" : " (no license fee — Linux)")+"</td></tr>"+
+      "<tr><td><b>Total while running</b></td><td><b>$"+rate.toFixed(3)+"/hr</b> — billing starts the moment the VM is created</td></tr>"+
+      "<tr><td>Hypervisor</td><td>Foundry Cloud Annex (simulated)</td></tr>";
+  }
+  function resetProvUI(){
+    document.getElementById("prov-err").classList.remove("show");
+    document.getElementById("retrybtn").style.display = "none";
+    document.getElementById("fixsize").style.display = "none";
+    var items = document.querySelectorAll("#prov-list li");
+    items.forEach(function(li,idx){
+      li.className = "";
+      li.querySelector(".dot").textContent = idx+1;
+    });
+  }
+  function fixSize(){
+    resetProvUI();
+    document.getElementById("prov-area").style.display = "none";
+    document.getElementById("createbtn").style.display = "inline-block";
+    document.getElementById("back5").style.display = "inline-block";
+    document.getElementById("shot1").style.display = "block";
+    go(3);
+  }
+  function provision(){
+    resetProvUI();
+    document.getElementById("createbtn").style.display = "none";
+    document.getElementById("back5").style.display = "none";
+    document.getElementById("shot1").style.display = "none";
+    document.getElementById("prov-area").style.display = "block";
+    var items = document.querySelectorAll("#prov-list li");
+    var err = document.getElementById("prov-err");
+
+    // deterministic failures
+    var failAt = -1, failMsg = "", failFix = null;
+    if(state.tier === "d4s"){
+      failAt = 0;
+      failMsg = "<span class='code'>QuotaExceeded:</span> your subscription allows a maximum of <b>2 vCPUs per VM</b> in this region. The D4s_v3 size needs 4. Real cloud accounts have quotas exactly like this — new accounts start small. <b>Fix:</b> choose a smaller size and try again.";
+      failFix = "size";
+    } else if(state.region === "east" && !state.eastFailed){
+      failAt = 0;
+      failMsg = "<span class='code'>AllocationFailed:</span> Foundry East doesn't have enough free capacity for your VM right now — the HIGH DEMAND warning was real. This happens in real clouds too. <b>Fix:</b> simply retry — capacity frees up constantly. (Retrying will work.)";
+      failFix = "retry";
+    }
+
+    var i = 0;
+    function next(){
+      if(i>0){ items[i-1].classList.remove("doing"); items[i-1].classList.add("done"); items[i-1].querySelector(".dot").textContent="✔"; }
+      if(failAt === i){
+        items[i].classList.add("fail");
+        items[i].querySelector(".dot").textContent = "✖";
+        err.innerHTML = failMsg;
+        err.classList.add("show");
+        if(failFix === "size"){ document.getElementById("fixsize").style.display = "inline-block"; }
+        else { state.eastFailed = true; document.getElementById("retrybtn").style.display = "inline-block"; }
+        return;
+      }
+      if(i < items.length){
+        items[i].classList.add("doing"); i++;
+        setTimeout(next, 800);
+      } else {
+        setTimeout(function(){ enterDashboard(); }, 400);
+      }
+    }
+    next();
+  }
+
+  /* ---- step 6: dashboard ---- */
+  function enterDashboard(){
+    state.running = true;
+    var t = tierById(state.tier);
+    document.getElementById("dash-name").textContent = state.name;
+    document.getElementById("dash-specs").innerHTML =
+      "<span>OS: <b>"+osLabel()+"</b></span><span>Size: <b>"+t.name+"</b></span><span>Region: <b>"+regionLabel()+"</b></span><span>Admin: <b>"+document.getElementById("adminuser").value+"</b></span>";
+    log("VM '"+state.name+"' created in "+regionLabel()+". Guest OS booted. Billing started at $"+hourlyRate().toFixed(3)+"/hr.");
+    startTicker();
+    updateCostUI();
+    go(6);
+  }
+  function startTicker(){
+    if(state.ticker) return;
+    state.ticker = setInterval(function(){
+      if(state.deleted) return;
+      state.hours++;
+      state.cost += state.running ? hourlyRate() : DISK_RATE;
+      updateCostUI();
+    }, 1000);
+  }
+  function updateCostUI(){
+    document.getElementById("cost-hours").textContent = state.hours;
+    var rate = state.deleted ? 0 : (state.running ? hourlyRate() : DISK_RATE);
+    document.getElementById("cost-rate").textContent = "$"+rate.toFixed(3)+"/hr" + (state.deleted ? "" : (state.running ? "" : " (disk only)"));
+    document.getElementById("cost-total").textContent = "$"+state.cost.toFixed(2);
+  }
+  function ts(){ return new Date().toTimeString().slice(0,8); }
+  function log(msg){
+    var el = document.getElementById("log");
+    el.innerHTML += "<div><span class='t'>["+ts()+"]</span> "+msg+"</div>";
+    el.scrollTop = el.scrollHeight;
+  }
+  function setStatus(running){
+    state.running = running;
+    var s = document.getElementById("dash-status");
+    s.className = "status " + (running ? "run" : "stop");
+    document.getElementById("dash-status-txt").textContent = running ? "Running" : "Stopped (deallocated)";
+    document.getElementById("btn-stop").disabled = !running;
+    document.getElementById("btn-start").disabled = running;
+    document.getElementById("btn-snap").disabled = !running;
+    updateCostUI();
+  }
+  function vmStop(){
+    setStatus(false);
+    log("VM stopped (deallocated). Compute billing paused — disk storage still billing at $"+DISK_RATE.toFixed(3)+"/hr.");
+    taskDone("stop");
+  }
+  function vmStart(){
+    setStatus(true);
+    log("VM started. Compute billing resumed at $"+hourlyRate().toFixed(3)+"/hr.");
+    taskDone("start");
+  }
+  function vmSnap(){
+    state.snaps++;
+    log("Snapshot 'snapshot-"+state.snaps+"' captured — exact copy of the VM's current state saved.");
+    var sl = document.getElementById("snaplist");
+    sl.innerHTML += "<div class='snap'><span>⧉ snapshot-"+state.snaps+"</span><span>"+ts()+"</span></div>";
+    taskDone("snap");
+  }
+  function askDelete(){ document.getElementById("modalbg").classList.add("show"); }
+  function closeModal(){ document.getElementById("modalbg").classList.remove("show"); }
+  function vmDelete(){
+    closeModal();
+    state.deleted = true;
+    setStatus(false);
+    document.getElementById("dash-status-txt").textContent = "Deleted";
+    ["btn-stop","btn-start","btn-snap","btn-del"].forEach(function(id){ document.getElementById(id).disabled = true; });
+    log("VM '"+state.name+"' deleted. Virtual disk destroyed. All billing stopped — final cost: $"+state.cost.toFixed(2)+".");
+    updateCostUI();
+    taskDone("del");
+  }
+  function taskDone(key){
+    if(state.tasks[key]) return;
+    state.tasks[key] = true;
+    var el = document.getElementById("task-"+key);
+    el.innerHTML = "✅ " + el.innerHTML.slice(el.innerHTML.indexOf(" ")+1);
+    el.style.color = "var(--green)";
+    checkDone();
+  }
+  function checkDone(){
+    var t = state.tasks;
+    if(t.stop && t.start && t.snap && t.del && state.quizzes.quiz3 && state.quizzes.quiz4){
+      document.getElementById("final-cost").textContent = "$"+state.cost.toFixed(2);
+      document.getElementById("donebanner").classList.add("show");
+    }
+  }
+  function resetAll(){ location.reload(); }
+
+  buildTiers();
+</script>
+</body>
+</html>
